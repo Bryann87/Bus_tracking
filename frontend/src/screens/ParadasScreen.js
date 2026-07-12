@@ -1,64 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, SafeAreaView, Platform, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, Alert, Modal } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import api from '../services/api'; // Necesitaremos tu API para consultar las rutas
 
-// --- BASE DE DATOS DE PARADAS EN MANTA (AJUSTADAS A TIERRA) ---
-const PARADAS_REALES = [
-  { id: '1', nombre: 'Parada ULEAM', lat: -0.9535, lng: -80.7445 },
-  { id: '2', nombre: 'Terminal Terrestre', lat: -0.9676, lng: -80.7008 },
-  { id: '3', nombre: 'Mall del Pacífico', lat: -0.9429, lng: -80.7241 },
-  { id: '4', nombre: 'Mercado Central', lat: -0.9412, lng: -80.7215 },
-  { id: '5', nombre: 'Plaza Cívica', lat: -0.9398, lng: -80.7208 }
-];
-
-const calcularDistancia = (lat1, lon1, lat2, lon2) => {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+// ... (Mantenemos tus funciones calcularDistancia y la constante PARADAS_REALES) ...
 
 export default function ParadasScreen({ navigation }) {
-  const [location, setLocation] = useState(null);
   const [paradasConDistancia, setParadasConDistancia] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // --- NUEVOS ESTADOS PARA EL DETALLE DE LA PARADA ---
+  const [paradaSeleccionada, setParadaSeleccionada] = useState(null);
+  const [rutasDeParada, setRutasDeParada] = useState([]);
+  const [loadingRutas, setLoadingRutas] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  
   const mapRef = useRef(null);
 
-  useEffect(() => {
-    obtenerUbicacionYCalcular();
-  }, []);
+  // ... (Mantenemos tu useEffect y obtenerUbicacionYCalcular) ...
 
-  const obtenerUbicacionYCalcular = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setLoading(false);
-      return;
-    }
-
-    let currentLocation = await Location.getCurrentPositionAsync({});
-    const userLat = currentLocation.coords.latitude;
-    const userLng = currentLocation.coords.longitude;
-    setLocation(currentLocation.coords);
-
-    const paradasCalculadas = PARADAS_MANTA.map(parada => {
-      const dist = calcularDistancia(userLat, userLng, parada.lat, parada.lng);
-      return { ...parada, distanciaKm: dist };
-    }).sort((a, b) => a.distanciaKm - b.distanciaKm);
-
-    setParadasConDistancia(paradasCalculadas);
-    setLoading(false);
-  };
-
-  const formatearDistancia = (distanciaKm) => {
-    return distanciaKm < 1 ? `${Math.round(distanciaKm * 1000)} m` : `${distanciaKm.toFixed(1)} km`;
-  };
-
-  const verEnMapa = (parada) => {
+  const verDetalleParada = async (parada) => {
+    // 1. Centramos el mapa
     if (mapRef.current) {
       mapRef.current.animateToRegion({
         latitude: parada.lat,
@@ -67,37 +31,35 @@ export default function ParadasScreen({ navigation }) {
         longitudeDelta: 0.005,
       }, 1000);
     }
+    
+    // 2. Abrimos el modal y mostramos estado de carga
+    setParadaSeleccionada(parada);
+    setModalVisible(true);
+    setLoadingRutas(true);
+
+    try {
+      // 3. Consultamos al backend las rutas que pasan por esta parada
+      // const { data } = await api.get(`/paradas/${parada.id}/rutas`);
+      // setRutasDeParada(data);
+
+      // --- SIMULACIÓN TEMPORAL DE RESPUESTA DEL BACKEND ---
+      setTimeout(() => {
+        setRutasDeParada([
+          { id: 1, nombre: 'Línea 1 - Centro', frecuencia: '15 min', proximo: '5 min' },
+          { id: 2, nombre: 'Línea 3 - ULEAM', frecuencia: '20 min', proximo: '12 min' }
+        ]);
+        setLoadingRutas(false);
+      }, 800);
+
+    } catch (error) {
+      console.log('Error cargando rutas', error);
+      setLoadingRutas(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          showsUserLocation={true}
-          showsMyLocationButton={false}
-          initialRegion={{
-            latitude: -0.9550,
-            longitude: -80.7200,
-            latitudeDelta: 0.04,
-            longitudeDelta: 0.04,
-          }}
-        >
-          {paradasConDistancia.map(parada => (
-            <Marker
-              key={parada.id}
-              coordinate={{ latitude: parada.lat, longitude: parada.lng }}
-              title={parada.nombre}
-            />
-          ))}
-        </MapView>
-        <SafeAreaView style={styles.backButtonContainer}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#0F172A" />
-          </TouchableOpacity>
-        </SafeAreaView>
-      </View>
+      {/* ... (Mantenemos el MapView y los botones flotantes) ... */}
 
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Paradas cercanas</Text>
@@ -108,7 +70,8 @@ export default function ParadasScreen({ navigation }) {
             data={paradasConDistancia}
             keyExtractor={item => item.id}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.listItem} onPress={() => verEnMapa(item)}>
+              // ACTUALIZACIÓN: Al tocar, llamamos a verDetalleParada
+              <TouchableOpacity style={styles.listItem} onPress={() => verDetalleParada(item)}>
                 <Text style={styles.itemTitle}>{item.nombre}</Text>
                 <Text style={styles.distanceText}>{formatearDistancia(item.distanciaKm)}</Text>
               </TouchableOpacity>
@@ -116,19 +79,69 @@ export default function ParadasScreen({ navigation }) {
           />
         )}
       </View>
+
+      {/* --- MODAL DE DETALLE DE RUTAS --- */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{paradaSeleccionada?.nombre}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <MaterialCommunityIcons name="close-circle" size={28} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {loadingRutas ? (
+              <ActivityIndicator size="large" color="#0284C7" style={{ marginVertical: 20 }} />
+            ) : (
+              <FlatList
+                data={rutasDeParada}
+                keyExtractor={(item) => String(item.id)}
+                ListEmptyComponent={<Text style={styles.emptyText}>No hay rutas registradas para esta parada.</Text>}
+                renderItem={({ item }) => (
+                  <View style={styles.rutaCard}>
+                    <View style={styles.rutaInfo}>
+                      <MaterialCommunityIcons name="bus" size={24} color="#0284C7" />
+                      <View style={{ marginLeft: 12 }}>
+                        <Text style={styles.rutaNombre}>{item.nombre}</Text>
+                        <Text style={styles.rutaFrecuencia}>Pasa cada {item.frecuencia}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.rutaLlegada}>
+                      <Text style={styles.llegadaLabel}>Próximo en</Text>
+                      <Text style={styles.llegadaTiempo}>{item.proximo}</Text>
+                    </View>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  mapContainer: { flex: 0.45 },
-  map: { width: '100%', height: '100%' },
-  backButtonContainer: { position: 'absolute', top: 40, left: 16 },
-  backButton: { width: 48, height: 48, backgroundColor: '#FFF', borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
-  listContainer: { flex: 0.55, padding: 20 },
-  listTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
-  listItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-  itemTitle: { fontSize: 16, fontWeight: '600' },
-  distanceText: { fontSize: 14, color: '#666' }
+  // ... (Tus estilos anteriores) ...
+  
+  // Estilos del Modal
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '60%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#0F172A' },
+  emptyText: { textAlign: 'center', color: '#64748B', marginTop: 20 },
+  rutaCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  rutaInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  rutaNombre: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
+  rutaFrecuencia: { fontSize: 13, color: '#64748B', marginTop: 2 },
+  rutaLlegada: { alignItems: 'flex-end' },
+  llegadaLabel: { fontSize: 12, color: '#64748B' },
+  llegadaTiempo: { fontSize: 16, fontWeight: 'bold', color: '#10B981' }
 });

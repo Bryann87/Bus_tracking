@@ -10,17 +10,34 @@ export default function MiBusScreen() {
   const [loading, setLoading] = useState(true);
   const [transmitiendo, setTransmitiendo] = useState(false);
   const [ultimaUbicacion, setUltimaUbicacion] = useState(null);
+  
   const watchSubscription = useRef(null);
   const intervalRef = useRef(null);
   const ultimaPosicion = useRef(null);
 
   useEffect(() => {
-    api.get('/user').then(({ data }) => {
-      setBus(data.busAsignado ?? null);
-      setLoading(false);
-    });
+    let isMounted = true; // Bandera para controlar el ciclo de vida del componente
 
-    return () => detener();
+    api.get('/user')
+      .then(({ data }) => {
+        // Solo actualizamos el estado si el componente sigue montado en pantalla
+        if (isMounted) {
+          setBus(data.busAsignado ?? null);
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          console.log('Error al cargar el bus:', error);
+          setLoading(false);
+        }
+      });
+
+    // Función de limpieza: se ejecuta cuando el usuario sale de la pantalla
+    return () => {
+      isMounted = false;
+      detener(); 
+    };
   }, []);
 
   async function iniciarTransmision() {
@@ -30,6 +47,7 @@ export default function MiBusScreen() {
       return;
     }
 
+    // Comienza a escuchar la ubicación del dispositivo
     watchSubscription.current = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, timeInterval: 4000, distanceInterval: 5 },
       (pos) => {
@@ -41,6 +59,7 @@ export default function MiBusScreen() {
     // Envía la posición más reciente al backend cada INTERVALO_MS
     intervalRef.current = setInterval(async () => {
       if (!ultimaPosicion.current || !bus) return;
+      
       const { latitude, longitude, speed, heading } = ultimaPosicion.current.coords;
       try {
         await api.post(`/buses/${bus.id}/ubicacion`, {
@@ -50,7 +69,8 @@ export default function MiBusScreen() {
           heading: heading ?? null,
         });
       } catch (e) {
-        // si falla una actualización puntual, se reintenta en el siguiente ciclo
+        // Si falla una actualización puntual, se reintenta en el siguiente ciclo
+        console.log('Fallo al enviar ubicación, reintentando en el próximo ciclo...', e);
       }
     }, INTERVALO_MS);
 
@@ -58,10 +78,12 @@ export default function MiBusScreen() {
   }
 
   function detener() {
+    // Detenemos el listener del GPS para ahorrar batería
     if (watchSubscription.current) {
       watchSubscription.current.remove();
       watchSubscription.current = null;
     }
+    // Limpiamos el intervalo de envío al backend
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
