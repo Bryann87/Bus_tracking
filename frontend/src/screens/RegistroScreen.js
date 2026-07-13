@@ -10,9 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
+import { COLORS, TYPE, RADIUS, SHADOW } from '../theme/colors';
+import RouteLine from '../theme/RouteLine';
 
 // --- Validaciones ---
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,7 +83,7 @@ export default function RegistroScreen({ navigation }) {
   const { register } = useAuth();
 
   const [form, setForm] = useState(initialForm);
-  const [coords, setCoords] = useState(null); // { latitude, longitude }
+  const [coords, setCoords] = useState(null);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [loading, setLoading] = useState(false);
@@ -121,8 +123,7 @@ export default function RegistroScreen({ navigation }) {
 
       const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
       if (place) {
-        const parts = [place.street, place.city || place.subregion, place.region]
-          .filter(Boolean);
+        const parts = [place.street, place.city || place.subregion, place.region].filter(Boolean);
         update('ubicacion', parts.join(', '));
       } else {
         update('ubicacion', `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
@@ -182,11 +183,16 @@ export default function RegistroScreen({ navigation }) {
     return (
       <View style={styles.inputWrapper}>
         <View style={[styles.inputRow, hasError && styles.inputRowError]}>
-          <Ionicons name={icon} size={19} color={hasError ? '#D32F2F' : '#8A93A3'} style={styles.inputIcon} />
+          <MaterialCommunityIcons
+            name={icon}
+            size={19}
+            color={hasError ? COLORS.danger : COLORS.muted}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={styles.input}
             placeholder={placeholder}
-            placeholderTextColor="#9AA3B2"
+            placeholderTextColor={COLORS.faint}
             value={form[field]}
             onChangeText={(v) => update(field, v)}
             onBlur={() => handleBlur(field)}
@@ -198,7 +204,11 @@ export default function RegistroScreen({ navigation }) {
           />
           {toggleSecure && (
             <TouchableOpacity onPress={toggleSecure} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name={secureVisible ? 'eye-off-outline' : 'eye-outline'} size={20} color="#8A93A3" />
+              <MaterialCommunityIcons
+                name={secureVisible ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color={COLORS.muted}
+              />
             </TouchableOpacity>
           )}
           {rightSlot}
@@ -209,10 +219,7 @@ export default function RegistroScreen({ navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         contentContainerStyle={styles.screen}
         keyboardShouldPersistTaps="handled"
@@ -220,28 +227,29 @@ export default function RegistroScreen({ navigation }) {
       >
         <View style={styles.headerArea}>
           <View style={styles.logoCircle}>
-            <Ionicons name="person-add-outline" size={30} color="#fff" />
+            <MaterialCommunityIcons name="account-plus-outline" size={30} color="#fff" />
           </View>
           <Text style={styles.title}>Crear cuenta</Text>
+          <RouteLine width={120} />
           <Text style={styles.subtitle}>Regístrate como pasajero</Text>
         </View>
 
         <View style={styles.card}>
           {apiError && (
             <View style={styles.apiErrorBox}>
-              <Ionicons name="alert-circle-outline" size={18} color="#B3261E" />
+              <MaterialCommunityIcons name="alert-circle-outline" size={18} color={COLORS.danger} />
               <Text style={styles.apiErrorText}>{apiError}</Text>
             </View>
           )}
 
-          <Text style={styles.sectionLabel}>Datos personales</Text>
+          <Text style={TYPE.label}>Datos personales</Text>
 
-          {renderInput({ field: 'name', placeholder: 'Nombre completo', icon: 'person-outline' })}
+          {renderInput({ field: 'name', placeholder: 'Nombre completo', icon: 'account-outline' })}
 
           {renderInput({
             field: 'email',
             placeholder: 'Correo electrónico',
-            icon: 'mail-outline',
+            icon: 'email-outline',
             keyboardType: 'email-address',
             autoCapitalize: 'none',
           })}
@@ -249,14 +257,14 @@ export default function RegistroScreen({ navigation }) {
           {renderInput({
             field: 'telefono',
             placeholder: 'Teléfono (opcional)',
-            icon: 'call-outline',
+            icon: 'phone-outline',
             keyboardType: 'phone-pad',
           })}
 
           {renderInput({
             field: 'ubicacion',
             placeholder: 'Tu ubicación',
-            icon: 'location-outline',
+            icon: 'map-marker-outline',
             rightSlot: (
               <TouchableOpacity
                 onPress={handleUseCurrentLocation}
@@ -265,9 +273,9 @@ export default function RegistroScreen({ navigation }) {
                 style={styles.locateButton}
               >
                 {locating ? (
-                  <ActivityIndicator size="small" color="#1565C0" />
+                  <ActivityIndicator size="small" color={COLORS.primary} />
                 ) : (
-                  <Ionicons name="navigate-outline" size={19} color="#1565C0" />
+                  <MaterialCommunityIcons name="crosshairs-gps" size={19} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
             ),
@@ -278,12 +286,12 @@ export default function RegistroScreen({ navigation }) {
             </Text>
           )}
 
-          <Text style={[styles.sectionLabel, { marginTop: 8 }]}>Seguridad</Text>
+          <Text style={[TYPE.label, { marginTop: 8 }]}>Seguridad</Text>
 
           {renderInput({
             field: 'password',
             placeholder: 'Contraseña',
-            icon: 'lock-closed-outline',
+            icon: 'lock-outline',
             secure: true,
             secureVisible: showPassword,
             toggleSecure: () => setShowPassword((v) => !v),
@@ -292,7 +300,7 @@ export default function RegistroScreen({ navigation }) {
           {renderInput({
             field: 'password_confirmation',
             placeholder: 'Confirmar contraseña',
-            icon: 'lock-closed-outline',
+            icon: 'lock-outline',
             secure: true,
             secureVisible: showPasswordConfirm,
             toggleSecure: () => setShowPasswordConfirm((v) => !v),
@@ -322,19 +330,6 @@ export default function RegistroScreen({ navigation }) {
   );
 }
 
-const COLORS = {
-  primary: '#1565C0',
-  primaryDark: '#0D47A1',
-  background: '#F4F6FA',
-  card: '#FFFFFF',
-  border: '#E3E7EE',
-  borderError: '#D32F2F',
-  text: '#1C2430',
-  muted: '#6B7280',
-  errorBg: '#FDECEA',
-  errorText: '#B3261E',
-};
-
 const styles = StyleSheet.create({
   screen: {
     flexGrow: 1,
@@ -343,72 +338,53 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     paddingBottom: 40,
   },
-  headerArea: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
+  headerArea: { alignItems: 'center', marginBottom: 20 },
   logoCircle: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: RADIUS.xl,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
+    ...SHADOW.md,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
   },
-  title: { fontSize: 24, fontWeight: '700', color: COLORS.text },
-  subtitle: { fontSize: 14, color: COLORS.muted, marginTop: 4 },
+  title: { ...TYPE.title, fontSize: 24, marginBottom: 10 },
+  subtitle: { ...TYPE.subtitle, marginTop: 10 },
 
   card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 18,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
+    ...SHADOW.sm,
   },
 
   apiErrorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: COLORS.errorBg,
-    borderRadius: 10,
+    backgroundColor: COLORS.dangerBg,
+    borderRadius: RADIUS.sm,
     padding: 12,
     marginBottom: 16,
   },
-  apiErrorText: { color: COLORS.errorText, fontSize: 13, flex: 1 },
+  apiErrorText: { color: COLORS.danger, fontSize: 13, flex: 1 },
 
   inputWrapper: { marginBottom: 14 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFBFC',
+    backgroundColor: COLORS.background,
     borderWidth: 1.3,
     borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     paddingHorizontal: 14,
   },
-  inputRowError: { borderColor: COLORS.borderError, backgroundColor: '#FFF9F8' },
+  inputRowError: { borderColor: COLORS.danger, backgroundColor: COLORS.dangerBg },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, paddingVertical: 13, fontSize: 15, color: COLORS.text },
-  errorText: { color: COLORS.errorText, fontSize: 12, marginTop: 5, marginLeft: 4 },
+  errorText: { color: COLORS.danger, fontSize: 12, marginTop: 5, marginLeft: 4 },
 
   locateButton: {
     marginLeft: 8,
@@ -420,15 +396,12 @@ const styles = StyleSheet.create({
 
   button: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 6,
+    ...SHADOW.sm,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
   },
   buttonDisabled: { opacity: 0.5, shadowOpacity: 0 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },

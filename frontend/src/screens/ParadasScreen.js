@@ -3,15 +3,36 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Activ
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import api from '../services/api'; // Necesitaremos tu API para consultar las rutas
 
-// ... (Mantenemos tus funciones calcularDistancia y la constante PARADAS_REALES) ...
+// Importamos tu contexto de autenticación para verificar si es administrador
+import { useAuth } from '../context/AuthContext';
+
+// Coordenadas ajustadas a tierra firme en Jaramijó y Manta
+const PARADAS_REALES = [
+  { id: '1', nombre: 'Parque de Jaramijó', lat: -0.9465, lng: -80.6452 },
+  { id: '2', nombre: 'Base Naval Jaramijó', lat: -0.9551, lng: -80.6305 },
+  { id: '3', nombre: 'Terminal Terrestre Manta', lat: -0.9676, lng: -80.7008 },
+  { id: '4', nombre: 'Mall del Pacífico', lat: -0.9440, lng: -80.7230 },
+  { id: '5', nombre: 'Plaza Cívica Manta', lat: -0.9405, lng: -80.7200 }
+];
+
+const calcularDistancia = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 export default function ParadasScreen({ navigation }) {
+  const { user } = useAuth(); // Obtenemos el usuario activo
+  
+  const [location, setLocation] = useState(null);
   const [paradasConDistancia, setParadasConDistancia] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // --- NUEVOS ESTADOS PARA EL DETALLE DE LA PARADA ---
+  // Estados para el detalle de la parada
   const [paradaSeleccionada, setParadaSeleccionada] = useState(null);
   const [rutasDeParada, setRutasDeParada] = useState([]);
   const [loadingRutas, setLoadingRutas] = useState(false);
@@ -19,10 +40,69 @@ export default function ParadasScreen({ navigation }) {
   
   const mapRef = useRef(null);
 
-  // ... (Mantenemos tu useEffect y obtenerUbicacionYCalcular) ...
+  useEffect(() => {
+    obtenerUbicacionYCalcular();
+  }, []);
+
+  const obtenerUbicacionYCalcular = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación para calcular distancias.');
+        setLoading(false);
+        return;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      const userLat = currentLocation.coords.latitude;
+      const userLng = currentLocation.coords.longitude;
+      setLocation(currentLocation.coords);
+
+      const paradasCalculadas = PARADAS_REALES.map(parada => {
+        const dist = calcularDistancia(userLat, userLng, parada.lat, parada.lng);
+        return { ...parada, distanciaKm: dist };
+      }).sort((a, b) => a.distanciaKm - b.distanciaKm);
+
+      setParadasConDistancia(paradasCalculadas);
+      centrarEnMiUbicacion(userLat, userLng);
+      
+    } catch (error) {
+      console.log('Error obteniendo ubicación: ', error);
+      Alert.alert('Error', 'Hubo un problema al cargar tu ubicación.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const centrarEnMiUbicacion = async (lat, lng) => {
+    if (lat && lng && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      }, 1000);
+      return;
+    }
+    try {
+      let pos = await Location.getCurrentPositionAsync({});
+      mapRef.current?.animateToRegion({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      }, 1000);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const formatearDistancia = (distanciaKm) => {
+    return distanciaKm < 1 ? `${Math.round(distanciaKm * 1000)} m` : `${distanciaKm.toFixed(1)} km`;
+  };
 
   const verDetalleParada = async (parada) => {
-    // 1. Centramos el mapa
+    // 1. Centramos el mapa en la parada que tocó el usuario
     if (mapRef.current) {
       mapRef.current.animateToRegion({
         latitude: parada.lat,
@@ -32,17 +112,13 @@ export default function ParadasScreen({ navigation }) {
       }, 1000);
     }
     
-    // 2. Abrimos el modal y mostramos estado de carga
+    // 2. Abrimos el modal
     setParadaSeleccionada(parada);
     setModalVisible(true);
     setLoadingRutas(true);
 
     try {
-      // 3. Consultamos al backend las rutas que pasan por esta parada
-      // const { data } = await api.get(`/paradas/${parada.id}/rutas`);
-      // setRutasDeParada(data);
-
-      // --- SIMULACIÓN TEMPORAL DE RESPUESTA DEL BACKEND ---
+      // --- SIMULACIÓN TEMPORAL (Reemplazarás con api.get() más adelante) ---
       setTimeout(() => {
         setRutasDeParada([
           { id: 1, nombre: 'Línea 1 - Centro', frecuencia: '15 min', proximo: '5 min' },
@@ -50,7 +126,6 @@ export default function ParadasScreen({ navigation }) {
         ]);
         setLoadingRutas(false);
       }, 800);
-
     } catch (error) {
       console.log('Error cargando rutas', error);
       setLoadingRutas(false);
@@ -59,8 +134,43 @@ export default function ParadasScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* ... (Mantenemos el MapView y los botones flotantes) ... */}
+      {/* 1. SECCIÓN DEL MAPA (¡La que faltaba!) */}
+      <View style={styles.mapContainer}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          showsUserLocation={true}
+          showsMyLocationButton={false}
+          initialRegion={{
+            latitude: -0.9465,
+            longitude: -80.6452,
+            latitudeDelta: 0.08,
+            longitudeDelta: 0.08,
+          }}
+        >
+          {paradasConDistancia.map(parada => (
+            <Marker
+              key={parada.id}
+              coordinate={{ latitude: parada.lat, longitude: parada.lng }}
+              title={parada.nombre}
+            />
+          ))}
+        </MapView>
+        
+        {/* Botón de Atrás sobre el mapa */}
+        <SafeAreaView style={styles.backButtonContainer}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#0F172A" />
+          </TouchableOpacity>
+        </SafeAreaView>
 
+        {/* Botón Flotante para Ubicarme */}
+        <TouchableOpacity style={styles.locateMeButton} onPress={() => centrarEnMiUbicacion()}>
+          <MaterialCommunityIcons name="crosshairs-gps" size={26} color="#0284C7" />
+        </TouchableOpacity>
+      </View>
+
+      {/* 2. SECCIÓN DE LA LISTA DE PARADAS */}
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Paradas cercanas</Text>
         {loading ? (
@@ -70,7 +180,6 @@ export default function ParadasScreen({ navigation }) {
             data={paradasConDistancia}
             keyExtractor={item => item.id}
             renderItem={({ item }) => (
-              // ACTUALIZACIÓN: Al tocar, llamamos a verDetalleParada
               <TouchableOpacity style={styles.listItem} onPress={() => verDetalleParada(item)}>
                 <Text style={styles.itemTitle}>{item.nombre}</Text>
                 <Text style={styles.distanceText}>{formatearDistancia(item.distanciaKm)}</Text>
@@ -80,7 +189,18 @@ export default function ParadasScreen({ navigation }) {
         )}
       </View>
 
-      {/* --- MODAL DE DETALLE DE RUTAS --- */}
+      {/* 3. BOTÓN EXCLUSIVO DEL ADMINISTRADOR */}
+      {user?.role === 'admin' && (
+        <TouchableOpacity 
+          style={styles.adminFab} 
+          onPress={() => navigation.navigate('AsignarParadas')}
+        >
+          <MaterialCommunityIcons name="map-marker-path" size={24} color="#FFF" />
+          <Text style={styles.adminFabText}>Vincular Ruta</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* 4. MODAL DEL PASAJERO CON LAS LÍNEAS DE BUSES */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -129,8 +249,23 @@ export default function ParadasScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  // ... (Tus estilos anteriores) ...
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  mapContainer: { flex: 0.45 }, // Esto reserva el 45% de la pantalla para el mapa
+  map: { width: '100%', height: '100%' },
+  backButtonContainer: { position: 'absolute', top: 40, left: 16 },
+  backButton: { width: 48, height: 48, backgroundColor: '#FFF', borderRadius: 24, justifyContent: 'center', alignItems: 'center', elevation: 3 },
+  locateMeButton: { position: 'absolute', bottom: 16, right: 16, width: 50, height: 50, backgroundColor: '#FFF', borderRadius: 25, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
   
+  listContainer: { flex: 0.55, padding: 20 },
+  listTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
+  listItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  itemTitle: { fontSize: 16, fontWeight: '600' },
+  distanceText: { fontSize: 14, color: '#666' },
+
+  // Estilos del botón de Admin
+  adminFab: { position: 'absolute', top: 100, right: 16, backgroundColor: '#1565C0', flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, alignItems: 'center', elevation: 5 },
+  adminFabText: { color: '#FFF', fontWeight: 'bold', marginLeft: 8 },
+
   // Estilos del Modal
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '60%' },

@@ -1,108 +1,130 @@
+// src/screens/LoginScreen.js
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  SafeAreaView, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Alert, 
-  ActivityIndicator 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
+import { COLORS, TYPE, RADIUS, SHADOW } from '../theme/colors';
+import RouteLine from '../theme/RouteLine';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Extraemos tu función login original del contexto
+  const [errorMsg, setErrorMsg] = useState(null);
+
   const { login } = useAuth();
 
-  const handleLogin = async () => {
+  async function handleLogin() {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Campos incompletos', 'Por favor, ingresa tu correo y contraseña.');
+      setErrorMsg('Ingresa tu correo y contraseña para continuar.');
       return;
     }
-
+    setErrorMsg(null);
     setIsLoading(true);
-
     try {
-      // AQUÍ ESTABA EL ERROR: 
-      // Ya no hacemos un fetch manual que rompa tu red.
-      // Simplemente llamamos a tu contexto, que usa tu archivo api.js ya configurado.
-      await login(email, password); 
-      
+      await login(email.trim().toLowerCase(), password);
     } catch (error) {
-      // Si tu contexto arroja un error (ej. credenciales inválidas), lo capturamos aquí
-      Alert.alert('Error', error.message || 'Error de conexión con el servidor.');
+      const msg = error?.response?.data?.message || 'Correo o contraseña incorrectos.';
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
         <View style={styles.header}>
-          <MaterialCommunityIcons name="bus-multiple" size={60} color="#0284c7" />
-          <Text style={styles.title}>Transporte Urbano</Text>
-          <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+          <View style={styles.logoBadge}>
+            <MaterialCommunityIcons name="bus-multiple" size={34} color="#fff" />
+          </View>
+          <Text style={styles.appName}>Transporte Urbano</Text>
+          <RouteLine width={140} />
+          <Text style={styles.subtitle}>Rastrea tu bus en tiempo real</Text>
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="email-outline" size={20} color="#64748B" style={styles.inputIcon} />
+        <View style={styles.card}>
+          {errorMsg && (
+            <View style={styles.errorBox}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={17} color={COLORS.danger} />
+              <Text style={styles.errorText}>{errorMsg}</Text>
+            </View>
+          )}
+
+          <Text style={TYPE.label}>Correo electrónico</Text>
+          <View style={styles.inputRow}>
+            <MaterialCommunityIcons name="email-outline" size={19} color={COLORS.muted} />
             <TextInput
               style={styles.input}
-              placeholder="Correo electrónico"
-              placeholderTextColor="#94A3B8"
+              placeholder="tucorreo@ejemplo.com"
+              placeholderTextColor={COLORS.faint}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => { setEmail(v); if (errorMsg) setErrorMsg(null); }}
+              editable={!isLoading}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-outline" size={20} color="#64748B" style={styles.inputIcon} />
+          <Text style={[TYPE.label, { marginTop: 14 }]}>Contraseña</Text>
+          <View style={styles.inputRow}>
+            <MaterialCommunityIcons name="lock-outline" size={19} color={COLORS.muted} />
             <TextInput
               style={styles.input}
-              placeholder="Contraseña"
-              placeholderTextColor="#94A3B8"
-              secureTextEntry
+              placeholder="••••••••"
+              placeholderTextColor={COLORS.faint}
+              secureTextEntry={!showPassword}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(v) => { setPassword(v); if (errorMsg) setErrorMsg(null); }}
+              editable={!isLoading}
             />
+            <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
+              <MaterialCommunityIcons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={19}
+                color={COLORS.muted}
+              />
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.primaryButton} 
-            activeOpacity={0.8}
+          <TouchableOpacity
+            style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
+            activeOpacity={0.85}
             onPress={handleLogin}
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryButtonText}>Entrar</Text>
+              <>
+                <Text style={styles.primaryButtonText}>Entrar</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color="#fff" />
+              </>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>¿No tienes cuenta? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Registro')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Registro')} disabled={isLoading}>
             <Text style={styles.footerLink}>Regístrate</Text>
           </TouchableOpacity>
         </View>
@@ -112,36 +134,74 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1, padding: 24, justifyContent: 'center' },
-  header: { alignItems: 'center', marginBottom: 40 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#0F172A', marginTop: 16 },
-  subtitle: { fontSize: 16, color: '#64748B', marginTop: 8 },
-  form: { width: '100%' },
-  inputContainer: {
+
+  header: { alignItems: 'center', marginBottom: 28 },
+  logoBadge: {
+    width: 68,
+    height: 68,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    ...SHADOW.md,
+    shadowColor: COLORS.primary,
+  },
+  appName: { ...TYPE.display, marginBottom: 10 },
+  subtitle: { ...TYPE.subtitle, marginTop: 10 },
+
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: 22,
+    ...SHADOW.sm,
+  },
+
+  errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    gap: 8,
+    backgroundColor: COLORS.dangerBg,
+    borderRadius: RADIUS.sm,
+    padding: 12,
     marginBottom: 16,
-    paddingHorizontal: 16,
-    height: 56,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
-  inputIcon: { marginRight: 12 },
-  input: { flex: 1, fontSize: 16, color: '#1E293B' },
-  forgotPassword: { alignSelf: 'flex-end', marginBottom: 24 },
-  forgotPasswordText: { color: '#0284c7', fontSize: 14, fontWeight: '500' },
+  errorText: { color: COLORS.danger, fontSize: 13, flex: 1 },
+
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.2,
+    borderColor: COLORS.border,
+    paddingHorizontal: 14,
+    height: 50,
+    marginTop: 6,
+  },
+  input: { flex: 1, fontSize: 15, color: COLORS.text },
+
+  forgotPassword: { alignSelf: 'flex-end', marginTop: 14, marginBottom: 20 },
+  forgotPasswordText: { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
+
   primaryButton: {
-    backgroundColor: '#0284c7',
-    height: 56,
-    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    height: 52,
+    borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
+    ...SHADOW.sm,
+    shadowColor: COLORS.primary,
   },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },
-  footerText: { color: '#64748B', fontSize: 14 },
-  footerLink: { color: '#0284c7', fontSize: 14, fontWeight: 'bold' },
+  buttonDisabled: { opacity: 0.6 },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 28 },
+  footerText: { color: COLORS.muted, fontSize: 14 },
+  footerLink: { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
 });
