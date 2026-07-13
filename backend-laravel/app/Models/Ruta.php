@@ -16,6 +16,9 @@ class Ruta extends Model
         'destino',
         'tarifa',
         'activo',
+        'frecuencia_minutos',
+        'hora_inicio',
+        'hora_fin',
     ];
 
     protected function casts(): array
@@ -27,11 +30,13 @@ class Ruta extends Model
     }
 
     public function paradas()
-{
-    // Asegúrate de tener ->withPivot('orden_recorrido') al final
-    return $this->belongsToMany(Parada::class, 'ruta_parada', 'id_ruta', 'id_parada')
-                ->withPivot('orden_recorrido', 'tiempo_promedio_llegada');
-}
+    {
+        // Los nombres de FK y de la columna pivote deben coincidir EXACTO
+        // con la migración create_ruta_parada_table: ruta_id, parada_id, orden.
+        return $this->belongsToMany(Parada::class, 'ruta_parada', 'ruta_id', 'parada_id')
+            ->withPivot('orden')
+            ->withTimestamps();
+    }
 
     public function buses()
     {

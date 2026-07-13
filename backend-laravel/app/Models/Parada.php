@@ -26,8 +26,9 @@ class Parada extends Model
 
     public function rutas()
     {
-        return $this->belongsToMany(Ruta::class, 'ruta_parada')
-            ->withPivot('orden');
+        return $this->belongsToMany(Ruta::class, 'ruta_parada', 'parada_id', 'ruta_id')
+            ->withPivot('orden')
+            ->withTimestamps();
     }
 
     public function reportes()
