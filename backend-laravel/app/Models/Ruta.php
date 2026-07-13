@@ -27,11 +27,11 @@ class Ruta extends Model
     }
 
     public function paradas()
-    {
-        return $this->belongsToMany(Parada::class, 'ruta_parada')
-            ->withPivot('orden')
-            ->orderBy('ruta_parada.orden');
-    }
+{
+    // Asegúrate de tener ->withPivot('orden_recorrido') al final
+    return $this->belongsToMany(Parada::class, 'ruta_parada', 'id_ruta', 'id_parada')
+                ->withPivot('orden_recorrido', 'tiempo_promedio_llegada');
+}
 
     public function buses()
     {

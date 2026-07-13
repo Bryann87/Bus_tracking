@@ -25,8 +25,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // ----- Rutas (lectura para todos los autenticados, escritura solo admin) -----
     Route::get('/rutas', [RutaController::class, 'index']);
     Route::get('/rutas/{ruta}', [RutaController::class, 'show']);
+    
+    // NUEVO: Obtener las paradas ordenadas de una ruta específica
+    Route::get('/rutas/{id}/paradas', [RutaController::class, 'getParadasAsignadas']);
+
     Route::middleware('role:admin')->group(function () {
         Route::post('/rutas', [RutaController::class, 'store']);
+        
+        // NUEVO: Guardar el orden del recorrido (Solo Administrador)
+        Route::post('/rutas/{id}/paradas', [RutaController::class, 'asignarParadas']);
+        
         Route::put('/rutas/{ruta}', [RutaController::class, 'update']);
         Route::delete('/rutas/{ruta}', [RutaController::class, 'destroy']);
     });
@@ -50,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/buses/{bus}', [BusController::class, 'update']);
         Route::delete('/buses/{bus}', [BusController::class, 'destroy']);
     });
+    
     // el conductor (o el admin) reporta la ubicación en tiempo real
     Route::middleware('role:admin,conductor')->group(function () {
         Route::post('/buses/{bus}/ubicacion', [BusController::class, 'actualizarUbicacion']);

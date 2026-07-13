@@ -19,6 +19,7 @@ import MiBusScreen from '../screens/MiBusScreen';
 import MapaTiempoRealScreen from '../screens/MapaTiempoRealScreen';
 import ReportesScreen from '../screens/ReportesScreen';
 import ReporteFormScreen from '../screens/ReporteFormScreen';
+import AsignarParadasScreen from '../screens/AsignarParadasScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,11 @@ function MainStack() {
       <Stack.Screen name="MiBus" component={MiBusScreen} options={{ title: 'Mi bus - GPS' }} />
       <Stack.Screen name="Mapa" component={MapaTiempoRealScreen} options={{ title: 'Mapa en vivo' }} />
       <Stack.Screen name="ReporteForm" component={ReporteFormScreen} options={{ title: 'Nuevo reporte' }} />
+      <Stack.Screen 
+        name="AsignarParadas" 
+        component={AsignarParadasScreen} 
+        options={{ title: 'Vincular Ruta' }} 
+      />
     </Stack.Navigator>
   );
 }

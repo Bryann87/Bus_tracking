@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 
 // Importamos tu cliente configurado y el contexto de autenticación
 import api from '../services/api';
@@ -11,9 +12,18 @@ import { useAuth } from '../context/AuthContext';
 export default function DashboardScreen({ navigation }) {
   const [buses, setBuses] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [locationPermission, setLocationPermission] = useState(false);
   
   // Extraemos la función logout del contexto
   const { logout } = useAuth();
+
+  // Solicitamos los permisos de ubicación al cargar la pantalla
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(status === 'granted');
+    })();
+  }, []);
 
   const fetchBuses = async () => {
     try {
@@ -35,6 +45,15 @@ export default function DashboardScreen({ navigation }) {
       <MapView 
         style={styles.map} 
         initialRegion={{ latitude: -0.9550, longitude: -80.7200, latitudeDelta: 0.04, longitudeDelta: 0.04 }}
+        // Propiedades para mostrar y centrar la ubicación
+        showsUserLocation={locationPermission}
+        showsMyLocationButton={true}
+        mapPadding={{ 
+          top: Platform.OS === 'android' ? 100 : 110, 
+          bottom: 90, 
+          right: 10, 
+          left: 10 
+        }}
       >
         {buses.map(b => (
           <Marker 

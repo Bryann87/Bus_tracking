@@ -5,34 +5,53 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "scheme": "transporteurbano",
     "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
       "backgroundColor": "#1565C0"
     },
     "android": {
       "package": "com.transporteurbano.app",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1565C0"
+      },
       "config": {
         "googleMaps": {
-          "apiKey": "TU_API_KEY_DE_GOOGLE_MAPS"
+          "apiKey": "TU_API_KEY_DE_GOOGLE_MAPS_ANDROID"
         }
       }
     },
     "ios": {
       "bundleIdentifier": "com.transporteurbano.app",
+      "buildNumber": "1.0.0",
+      "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Necesitamos tu ubicación para mostrar la posición del bus en tiempo real."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Transporte Urbano necesita tu ubicación en segundo plano para transmitir la posición del bus a los pasajeros.",
+          "UIBackgroundModes": ["location"]},
+      "config": {
+        "googleMapsApiKey": "TU_API_KEY_DE_GOOGLE_MAPS_IOS"
       }
     },
     "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Permite que la app use tu ubicación para el seguimiento del bus."
-        }
-      ]
-    ]
+  [
+    "expo-location",
+    {
+      "locationAlwaysAndWhenInUsePermission": "Transporte Urbano necesita tu ubicación en segundo plano para transmitir la posición del bus a los pasajeros.",
+      "locationWhenInUsePermission": "Transporte Urbano necesita tu ubicación para mostrar la posición del bus en el mapa.",
+      "isAndroidBackgroundLocationEnabled": true
+    }
+  ],
+  "expo-task-manager"
+]
+    
+    
   }
 }
