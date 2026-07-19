@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -15,9 +14,13 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../services/api';
-import { COLORS, RADIUS } from '../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function RutaFormScreen({ navigation, route }) {
+  const { colors: COLORS, radius: RADIUS, shadow: SHADOW } = useTheme();
+const styles = makeStyles(COLORS, RADIUS, SHADOW);
+
   const rutaId = route.params?.rutaId ?? null;
 
   const [nombre, setNombre] = useState('');
@@ -82,10 +85,13 @@ export default function RutaFormScreen({ navigation, route }) {
             ]
       );
     } catch (error) {
-      const errors = error.response?.data?.errors;
-      const firstError = errors ? Object.values(errors)[0][0] : null;
-      Alert.alert('Error', firstError || 'No se pudo guardar la ruta.');
-    } finally {
+  const data = error.response?.data;
+  const validationError = data?.errors ? Object.values(data.errors)[0][0] : null;
+  const mensaje = validationError || data?.message || 'No se pudo guardar la parada.';
+  Alert.alert('Error', mensaje);
+  console.log('Detalle del error:', error.response?.status, data);
+}
+     finally {
       setLoading(false);
     }
   }
@@ -203,7 +209,8 @@ export default function RutaFormScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(COLORS, RADIUS, SHADOW) {
+  return StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.surface },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   keyboardView: { flex: 1 },
@@ -241,3 +248,4 @@ const styles = StyleSheet.create({
   deleteButton: { alignItems: 'center', marginTop: 20, marginBottom: 20 },
   deleteButtonText: { color: COLORS.danger, fontWeight: 'bold' },
 });
+}

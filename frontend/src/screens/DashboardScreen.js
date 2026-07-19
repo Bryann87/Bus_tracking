@@ -8,7 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, RADIUS, SHADOW } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 const REGION_INICIAL = {
   latitude: -0.9550,
@@ -24,6 +24,8 @@ const NAV_ITEMS = [
 ];
 
 export default function DashboardScreen({ navigation }) {
+    const { colors: COLORS, radius: RADIUS, shadow: SHADOW } = useTheme();
+  const styles = makeStyles(COLORS, RADIUS, SHADOW);
   const [buses, setBuses] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(null);
@@ -145,7 +147,8 @@ export default function DashboardScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(COLORS, RADIUS, SHADOW) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   map: { flex: 1 },
 
@@ -251,4 +254,5 @@ const styles = StyleSheet.create({
   menuIconWrapActive: { backgroundColor: COLORS.primary },
   menuLabel: { fontSize: 11, color: COLORS.muted, fontWeight: '600' },
   menuLabelActive: { color: COLORS.primary },
-});
+  });
+}

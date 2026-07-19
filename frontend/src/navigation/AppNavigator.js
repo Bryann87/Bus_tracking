@@ -5,6 +5,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../theme/colors';
 
+import ConductoresScreen from '../screens/ConductoresScreen';
+import ConductorFormScreen from '../screens/ConductorFormScreen';
+
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+
 // Pantallas
 import LoginScreen from '../screens/LoginScreen';
 import RegistroScreen from '../screens/RegistroScreen';
@@ -36,6 +41,7 @@ function AuthStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Registro" component={RegistroScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 }
@@ -76,6 +82,11 @@ function MainStack({ role }) {
       <Stack.Screen name="Mapa" component={MapaTiempoRealScreen} options={{ title: 'Mapa en vivo' }} />
       <Stack.Screen name="Reportes" component={ReportesScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ReporteForm" component={ReporteFormScreen} options={{ title: 'Nuevo reporte' }} />
+
+      <Stack.Screen name="Conductores" component={ConductoresScreen} options={{ headerShown: false }} />
+<Stack.Screen name="ConductorForm" component={ConductorFormScreen} options={{ headerShown: false }} />
+
+
     </Stack.Navigator>
   );
 }

@@ -1,16 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Modal } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, RADIUS, SHADOW } from '../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../theme/ThemeContext';
 
 const REGION_INICIAL = { latitude: -0.9550, longitude: -80.7200, latitudeDelta: 0.08, longitudeDelta: 0.08 };
 
 function calcularDistancia(lat1, lon1, lat2, lon2) {
+  
+
   const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -25,6 +28,9 @@ function formatearDistancia(km) {
 }
 
 export default function ParadasScreen({ navigation }) {
+
+  const { colors: COLORS, radius: RADIUS, shadow: SHADOW } = useTheme();
+const styles = makeStyles(COLORS, RADIUS, SHADOW);
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
@@ -222,7 +228,9 @@ export default function ParadasScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(COLORS, RADIUS, SHADOW) {
+  return StyleSheet.create({ 
+
   container: { flex: 1, backgroundColor: COLORS.surface },
   mapContainer: { flex: 0.45 },
   map: { width: '100%', height: '100%' },
@@ -249,3 +257,4 @@ const styles = StyleSheet.create({
   rutaNombre: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   rutaFrecuencia: { fontSize: 13, color: COLORS.muted, marginTop: 2 },
 });
+}

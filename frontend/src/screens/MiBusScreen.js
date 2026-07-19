@@ -1,12 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useRef, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../theme/ThemeContext';
 
 const INTERVALO_MS = 8000; // cada 8 segundos se envía la posición al backend
 
 export default function MiBusScreen() {
+  const { colors: COLORS, isDark, toggleTheme } = useTheme();
+  const styles = makeStyles(COLORS);
+
   const [bus, setBus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [transmitiendo, setTransmitiendo] = useState(false);
@@ -22,34 +36,55 @@ export default function MiBusScreen() {
     <View style={styles.headerBar}>
       <Text style={styles.headerTitle}>Mi bus</Text>
 
-      <TouchableOpacity onPress={logout} hitSlop={8}>
-        <Text style={styles.headerLogout}>Cerrar sesión</Text>
-      </TouchableOpacity>
+      <View style={styles.headerActions}>
+        <TouchableOpacity onPress={toggleTheme} hitSlop={8}>
+          <MaterialCommunityIcons
+            name={isDark ? 'white-balance-sunny' : 'moon-waning-crescent'}
+            size={18}
+            color={COLORS.text}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={logout} hitSlop={8}>
+          <Text style={styles.headerLogout}>Cerrar sesión</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
-  useEffect(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      setLoading(true);
 
-    api.get('/user')
-      .then(({ data }) => {
-        if (isMounted) {
-          setBus(data.busAsignado ?? null);
-          setLoading(false);
-        }
-      })
-      .catch((error) => {
-        if (isMounted) {
-          console.log('Error al cargar el bus:', error);
-          setLoading(false);
-        }
-      });
+      api
+        .get('/user')
+        .then(({ data }) => {
+          console.log('=== RESPUESTA /user ===', JSON.stringify(data, null, 2));
 
-    return () => {
-      isMounted = false;
-      detener();
-    };
-  }, []);
+          if (isMounted) {
+            setBus(data.bus_asignado ?? null);
+            setLoading(false);
+          }
+        })
+        .catch((error) => {
+          console.log(
+            '=== ERROR al pedir /user ===',
+            error?.response?.status,
+            error?.response?.data ?? error.message
+          );
+
+          if (isMounted) {
+            setLoading(false);
+          }
+        });
+
+      return () => {
+        isMounted = false;
+        detener();
+      };
+    }, [])
+  );
 
   async function iniciarTransmision() {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -118,7 +153,7 @@ export default function MiBusScreen() {
         <Header />
 
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1565C0" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       </View>
     );
@@ -149,13 +184,15 @@ export default function MiBusScreen() {
         style={[
           styles.estadoBox,
           {
-            backgroundColor: transmitiendo ? '#E8F5E9' : '#FFF3E0',
+            backgroundColor: transmitiendo
+              ? COLORS.successBg
+              : COLORS.warningBg,
           },
         ]}
       >
         <Text
           style={{
-            color: transmitiendo ? '#2E7D32' : '#EF6C00',
+            color: transmitiendo ? COLORS.success : COLORS.warning,
             fontWeight: 'bold',
           }}
         >
@@ -188,7 +225,9 @@ export default function MiBusScreen() {
         style={[
           styles.button,
           {
-            backgroundColor: transmitiendo ? '#C62828' : '#1565C0',
+            backgroundColor: transmitiendo
+              ? COLORS.danger
+              : COLORS.primary,
           },
         ]}
         onPress={transmitiendo ? detener : iniciarTransmision}
@@ -201,102 +240,110 @@ export default function MiBusScreen() {
       </TouchableOpacity>
 
       <Text style={styles.ayuda}>
-        La app envía tu posición cada {INTERVALO_MS / 1000} segundos mientras esta
-        pantalla esté activa.
+        La app envía tu posición cada {INTERVALO_MS / 1000} segundos mientras
+        esta pantalla esté activa.
       </Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-  },
+function makeStyles(COLORS) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+      padding: 20,
+    },
 
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  headerBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: 4,
-    marginBottom: 20,
-  },
+    headerBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      paddingHorizontal: 4,
+      marginBottom: 20,
+    },
 
-  headerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-  },
+    headerActions: {
+      flexDirection: 'row',
+      gap: 16,
+      alignItems: 'center',
+    },
 
-  headerLogout: {
-    color: '#C62828',
-    fontWeight: '600',
-    fontSize: 13,
-  },
+    headerTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: COLORS.muted,
+      textTransform: 'uppercase',
+    },
 
-  aviso: {
-    textAlign: 'center',
-    color: '#777',
-  },
+    headerLogout: {
+      color: COLORS.danger,
+      fontWeight: '600',
+      fontSize: 13,
+    },
 
-  placa: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#222',
-    textAlign: 'center',
-  },
+    aviso: {
+      textAlign: 'center',
+      color: COLORS.muted,
+    },
 
-  subtitulo: {
-    color: '#777',
-    marginTop: 4,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
+    placa: {
+      fontSize: 26,
+      fontWeight: 'bold',
+      color: COLORS.text,
+      textAlign: 'center',
+    },
 
-  estadoBox: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 20,
-    marginBottom: 20,
-    alignSelf: 'center',
-  },
+    subtitulo: {
+      color: COLORS.muted,
+      marginTop: 4,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
 
-  datos: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
+    estadoBox: {
+      paddingVertical: 10,
+      paddingHorizontal: 18,
+      borderRadius: 20,
+      marginBottom: 20,
+      alignSelf: 'center',
+    },
 
-  dato: {
-    color: '#555',
-    marginBottom: 4,
-  },
+    datos: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
 
-  button: {
-    paddingVertical: 16,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    alignSelf: 'center',
-  },
+    dato: {
+      color: COLORS.text,
+      marginBottom: 4,
+    },
 
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
+    button: {
+      paddingVertical: 16,
+      paddingHorizontal: 30,
+      borderRadius: 10,
+      alignSelf: 'center',
+    },
 
-  ayuda: {
-    color: '#999',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-});
+    buttonText: {
+      color: COLORS.onPrimary,
+      fontWeight: 'bold',
+      fontSize: 15,
+    },
+
+    ayuda: {
+      color: COLORS.faint,
+      fontSize: 12,
+      textAlign: 'center',
+      marginTop: 20,
+    },
+  });
+}

@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Rules\CedulaEcuatoriana; 
 
 class AuthController extends Controller
 {
@@ -14,6 +15,7 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'cedula' => ['required', 'string', 'unique:users,cedula', new CedulaEcuatoriana()],
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
             'role' => 'nullable|in:admin,conductor,pasajero',
@@ -29,6 +31,7 @@ class AuthController extends Controller
 
         $user = User::create([
             'name' => $request->name,
+            'cedula' => $request->cedula,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             // por seguridad, el registro público solo crea pasajeros;

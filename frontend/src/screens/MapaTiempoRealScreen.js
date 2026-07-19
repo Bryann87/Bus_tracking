@@ -1,7 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import MapView, {
+  Marker,
+  Callout,
+} from 'react-native-maps';
 import api from '../services/api';
+import { useTheme } from '../theme/ThemeContext';
 
 const REGION_INICIAL = {
   latitude: -1.0546,
@@ -13,16 +22,29 @@ const REGION_INICIAL = {
 const POLLING_MS = 6000; // consulta la posición de los buses cada 6 segundos
 
 export default function MapaTiempoRealScreen() {
+  const { colors: COLORS, radius: RADIUS, shadow: SHADOW } =
+    useTheme();
+
+  const styles = makeStyles(
+    COLORS,
+    RADIUS,
+    SHADOW
+  );
+
   const [buses, setBuses] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const intervalRef = useRef(null);
 
   async function cargarBuses() {
     try {
-      const { data } = await api.get('/buses/activos');
+      const { data } = await api.get(
+        '/buses/activos'
+      );
+
       setBuses(data);
     } catch (e) {
-      // se reintenta en el próximo ciclo de polling
+      // Se reintenta automáticamente en el siguiente ciclo
     } finally {
       setLoading(false);
     }
@@ -30,32 +52,65 @@ export default function MapaTiempoRealScreen() {
 
   useEffect(() => {
     cargarBuses();
-    intervalRef.current = setInterval(cargarBuses, POLLING_MS);
-    return () => clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(
+      cargarBuses,
+      POLLING_MS
+    );
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1565C0" />
+        <ActivityIndicator
+          size="large"
+          color={COLORS.primary}
+        />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <MapView style={styles.map} initialRegion={REGION_INICIAL}>
+      <MapView
+        style={styles.map}
+        initialRegion={REGION_INICIAL}
+      >
         {buses.map((bus) => (
           <Marker
             key={bus.id}
-            coordinate={{ latitude: Number(bus.latitud), longitude: Number(bus.longitud) }}
-            pinColor={bus.en_linea ? '#2E7D32' : '#9E9E9E'}
+            coordinate={{
+              latitude: Number(bus.latitud),
+              longitude: Number(bus.longitud),
+            }}
+            pinColor={
+              bus.en_linea
+                ? '#2E7D32'
+                : '#9E9E9E'
+            }
           >
             <Callout>
-              <View style={{ maxWidth: 180 }}>
-                <Text style={{ fontWeight: 'bold' }}>🚍 {bus.placa}</Text>
-                <Text>Ruta: {bus.ruta ?? 'Sin asignar'}</Text>
-                <Text>{bus.en_linea ? 'En línea' : 'Sin señal reciente'}</Text>
+              <View style={styles.callout}>
+                <Text style={styles.calloutTitle}>
+                  🚍 {bus.placa}
+                </Text>
+
+                <Text style={styles.calloutText}>
+                  Ruta:{' '}
+                  {bus.ruta ?? 'Sin asignar'}
+                </Text>
+
+                <Text style={styles.calloutText}>
+                  {bus.en_linea
+                    ? 'En línea'
+                    : 'Sin señal reciente'}
+                </Text>
               </View>
             </Callout>
           </Marker>
@@ -64,17 +119,57 @@ export default function MapaTiempoRealScreen() {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          🚌 {buses.length} bus(es) activo(s) · actualiza cada {POLLING_MS / 1000}s
+          🚌 {buses.length} bus(es) activo(s) ·
+          actualiza cada {POLLING_MS / 1000}s
         </Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  map: { flex: 1 },
-  footer: { padding: 10, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee' },
-  footerText: { textAlign: 'center', color: '#555', fontSize: 12 },
-});
+function makeStyles(COLORS, RADIUS, SHADOW) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+
+    center: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: COLORS.background,
+    },
+
+    map: {
+      flex: 1,
+    },
+
+    footer: {
+      padding: 10,
+      backgroundColor: COLORS.surface,
+      borderTopWidth: 1,
+      borderTopColor: COLORS.border,
+    },
+
+    footerText: {
+      textAlign: 'center',
+      color: COLORS.muted,
+      fontSize: 12,
+    },
+
+    callout: {
+      maxWidth: 180,
+    },
+
+    calloutTitle: {
+      fontWeight: 'bold',
+      color: COLORS.text,
+      marginBottom: 2,
+    },
+
+    calloutText: {
+      color: COLORS.text,
+    },
+  });
+}

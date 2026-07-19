@@ -152,4 +152,33 @@ class RutaController extends Controller
 
         return response()->json($formato);
     }
+    // Guarda (o reemplaza) el recorrido completo de una ruta, en el orden recibido.
+// POST /rutas/{id}/paradas  Body: { "paradas": [5, 12, 3] }  (en el orden del recorrido)
+public function asignarParadas(Request $request, $id)
+{
+    $ruta = Ruta::findOrFail($id);
+
+    $validator = Validator::make($request->all(), [
+        'paradas' => 'required|array|min:1',
+        'paradas.*' => 'exists:paradas,id',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Datos inválidos.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $sync = [];
+    foreach ($request->input('paradas') as $index => $paradaId) {
+        $sync[$paradaId] = ['orden' => $index + 1];
+    }
+    $ruta->paradas()->sync($sync);
+
+    return response()->json([
+        'message' => 'Recorrido de la ruta actualizado correctamente.',
+        'paradas' => $ruta->paradas()->orderBy('ruta_parada.orden', 'asc')->get(),
+    ]);
+}
 }

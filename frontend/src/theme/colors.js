@@ -1,37 +1,31 @@
-// src/theme/colors.js
-//
-// Sistema de diseño único de la app — importar SIEMPRE desde aquí,
-// nunca hardcodear hex codes sueltos en las pantallas (eso fue lo que
-// causó que Login y Registro tuvieran dos azules distintos).
-
 export const COLORS = {
-  // Marca — azul transporte, más profundo y saturado que un azul Material genérico
-  primary: '#1C4E9E',
-  primaryDark: '#12315F',
-  primaryLight: '#E8F0FC',
+  // Marca — teal profundo, distintivo y serio
+  primary: '#0B5566',
+  primaryDark: '#073C48',
+  primaryLight: '#E4F1F2',
 
-  // Acento — ámbar "línea de ruta", inspirado en la señalética de paradas de bus
-  accent: '#F2A93C',
-  accentDark: '#C7841E',
+  // Acento — coral cálido, contraste vivo sin ser estridente
+  accent: '#FF6B4A',
+  accentDark: '#E4502F',
 
   // Semánticos
-  success: '#1F9D55',
-  successBg: '#E7F7ED',
-  danger: '#E5484D',
-  dangerBg: '#FDECEC',
+  success: '#1D9A6C',
+  successBg: '#E5F7EF',
+  danger: '#E1493F',
+  dangerBg: '#FDEAE8',
   warning: '#F2A93C',
   warningBg: '#FEF6E7',
 
   // Base
-  background: '#F5F7FB',
+  background: '#F5F8F8',
   surface: '#FFFFFF',
-  border: '#E2E8F0',
+  border: '#DEE7E8',
 
   // Texto
-  ink: '#101B33',
-  text: '#1E293B',
-  muted: '#64748B',
-  faint: '#94A3B8',
+  ink: '#0D2224',
+  text: '#1E3234',
+  muted: '#5E7477',
+  faint: '#94A6A8',
 };
 
 export const TYPE = {
@@ -52,17 +46,17 @@ export const RADIUS = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 };
 
 export const SHADOW = {
   sm: {
-    shadowColor: '#0B1B3A',
+    shadowColor: '#04191B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
   md: {
-    shadowColor: '#0B1B3A',
+    shadowColor: '#04191B',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
     elevation: 6,
   },
 };

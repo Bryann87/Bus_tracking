@@ -2,16 +2,23 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { COLORS } from './src/theme/colors';
+
+function StatusBarThemed() {
+  const { isDark, colors } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />;
+}
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <StatusBar style="light" backgroundColor={COLORS.primaryDark} />
-        <AppNavigator />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <StatusBarThemed />
+          <AppNavigator />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }

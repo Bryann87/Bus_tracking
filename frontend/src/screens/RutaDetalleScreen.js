@@ -5,9 +5,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { COLORS, RADIUS, SHADOW } from '../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function RutaDetalleScreen({ route, navigation }) {
+  const { colors: COLORS, radius: RADIUS, shadow: SHADOW } = useTheme();
+const styles = makeStyles(COLORS, RADIUS, SHADOW);
+
   const { rutaId } = route.params;
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -125,7 +129,9 @@ export default function RutaDetalleScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(COLORS, RADIUS, SHADOW) {
+  return StyleSheet.create({  
+
   container: { flex: 1, backgroundColor: COLORS.surface },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', margin: 20, marginBottom: 8 },
@@ -154,3 +160,4 @@ const styles = StyleSheet.create({
   adminButton: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.primaryLight, paddingVertical: 10, paddingHorizontal: 14, borderRadius: RADIUS.md },
   adminButtonText: { color: COLORS.primary, fontWeight: '600', fontSize: 13 },
 });
+}
